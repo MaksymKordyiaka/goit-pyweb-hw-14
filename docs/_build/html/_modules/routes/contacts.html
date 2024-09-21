@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>routes.contacts &#8212; rest app  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">routes.contacts</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for routes.contacts</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">fastapi</span> <span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">APIRouter</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">db.connect_db</span> <span class="kn">import</span> <span class="n">get_db</span>
+<span class="kn">from</span> <span class="nn">db.models</span> <span class="kn">import</span> <span class="n">User</span>
+<span class="kn">from</span> <span class="nn">repository</span> <span class="kn">import</span> <span class="n">contacts</span>
+<span class="kn">from</span> <span class="nn">schemas</span> <span class="kn">import</span> <span class="n">Contact</span><span class="p">,</span> <span class="n">ContactCreate</span>
+<span class="kn">from</span> <span class="nn">services.auth</span> <span class="kn">import</span> <span class="n">auth_services</span>
+<span class="kn">from</span> <span class="nn">services.rate_limiter</span> <span class="kn">import</span> <span class="n">limit_rate</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;/contacts&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="create_contact">
+<a class="viewcode-back" href="../../index.html#routes.contacts.create_contact">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Contact</span><span class="p">,</span> <span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span><span class="p">,)</span>
+<span class="k">def</span> <span class="nf">create_contact</span><span class="p">(</span><span class="n">contact</span><span class="p">:</span> <span class="n">ContactCreate</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                   <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Створює новий контакт для поточного користувача.</span>
+
+<span class="sd">    :param contact: Дані для створення нового контакту.</span>
+<span class="sd">    :type contact: ContactCreate</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Створений контакт.</span>
+<span class="sd">    :rtype: Contact</span>
+<span class="sd">    :raises HTTPException: Якщо виникає помилка при створенні контакту.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">limit_rate</span><span class="p">(</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">contacts</span><span class="o">.</span><span class="n">create_contact</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">contact</span><span class="o">=</span><span class="n">contact</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">current_user</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+
+
+<div class="viewcode-block" id="get_contacts_birthday_next_7_days">
+<a class="viewcode-back" href="../../index.html#routes.contacts.get_contacts_birthday_next_7_days">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/birthday_next_7_days&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">Contact</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">get_contacts_birthday_next_7_days</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                                      <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Отримує список контактів поточного користувача з днями народження в найближчі 7 днів.</span>
+
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Список контактів з днями народження в найближчі 7 днів.</span>
+<span class="sd">    :rtype: list[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">contacts</span><span class="o">.</span><span class="n">get_upcoming_birthdays</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">current_user</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="search_contacts">
+<a class="viewcode-back" href="../../index.html#routes.contacts.search_contacts">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/search&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">Contact</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">search_contacts</span><span class="p">(</span><span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">second_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span> <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Шукає контакти поточного користувача за ім&#39;ям, прізвищем або email.</span>
+
+<span class="sd">    :param first_name: Ім&#39;я контакту.</span>
+<span class="sd">    :type first_name: str, optional</span>
+<span class="sd">    :param second_name: Прізвище контакту.</span>
+<span class="sd">    :type second_name: str, optional</span>
+<span class="sd">    :param email: Email контакту.</span>
+<span class="sd">    :type email: str, optional</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Список контактів, що відповідають критеріям пошуку.</span>
+<span class="sd">    :rtype: list[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">contacts</span><span class="o">.</span><span class="n">search_contacts</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">current_user</span><span class="p">,</span> <span class="n">first_name</span><span class="o">=</span><span class="n">first_name</span><span class="p">,</span> <span class="n">second_name</span><span class="o">=</span><span class="n">second_name</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="read_contact">
+<a class="viewcode-back" href="../../index.html#routes.contacts.read_contact">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/</span><span class="si">{contact_id}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Contact</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">read_contact</span><span class="p">(</span><span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                 <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Отримує деталі контакту за його ідентифікатором.</span>
+
+<span class="sd">    :param contact_id: Ідентифікатор контакту.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Деталі контакту.</span>
+<span class="sd">    :rtype: Contact</span>
+<span class="sd">    :raises HTTPException: Якщо контакт не знайдено.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">contacts</span><span class="o">.</span><span class="n">get_contact</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">,</span> <span class="n">current_user</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">db_contact</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s1">&#39;Contact not found&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+
+
+<div class="viewcode-block" id="read_contacts">
+<a class="viewcode-back" href="../../index.html#routes.contacts.read_contacts">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="nb">list</span><span class="p">[</span><span class="n">Contact</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">read_contacts</span><span class="p">(</span><span class="n">skip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                  <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Отримує список контактів поточного користувача з можливістю пагінації.</span>
+
+<span class="sd">    :param skip: Кількість пропущених записів для пагінації.</span>
+<span class="sd">    :type skip: int</span>
+<span class="sd">    :param limit: Максимальна кількість контактів для повернення.</span>
+<span class="sd">    :type limit: int</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Список контактів.</span>
+<span class="sd">    :rtype: list[Contact]</span>
+<span class="sd">    :raises HTTPException: Якщо контакти не знайдено.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contacts</span> <span class="o">=</span> <span class="n">contacts</span><span class="o">.</span><span class="n">get_contacts</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">current_user</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="n">skip</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">db_contacts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s1">&#39;No contacts found&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contacts</span></div>
+
+
+
+<div class="viewcode-block" id="update_contact">
+<a class="viewcode-back" href="../../index.html#routes.contacts.update_contact">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;/</span><span class="si">{contact_id}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Contact</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">update_contact</span><span class="p">(</span><span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">contact_update</span><span class="p">:</span> <span class="n">ContactCreate</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                   <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Оновлює контакт за його ідентифікатором.</span>
+
+<span class="sd">    :param contact_id: Ідентифікатор контакту для оновлення.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :param contact_update: Дані для оновлення контакту.</span>
+<span class="sd">    :type contact_update: ContactCreate</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Оновлений контакт.</span>
+<span class="sd">    :rtype: Contact</span>
+<span class="sd">    :raises HTTPException: Якщо контакт не знайдено.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">contacts</span><span class="o">.</span><span class="n">upgrade_contact</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">current_user</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">,</span> <span class="n">contact_update</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">db_contact</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_404_NOT_FOUND</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s1">&#39;Contact not found&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+
+
+<div class="viewcode-block" id="delete_contact">
+<a class="viewcode-back" href="../../index.html#routes.contacts.delete_contact">[docs]</a>
+<span class="nd">@router</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s1">&#39;/</span><span class="si">{contact_id}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">Contact</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">delete_contact</span><span class="p">(</span><span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db</span><span class="p">),</span>
+                   <span class="n">current_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">auth_services</span><span class="o">.</span><span class="n">get_current_user</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Видаляє контакт за його ідентифікатором.</span>
+
+<span class="sd">    :param contact_id: Ідентифікатор контакту для видалення.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :param db: Сеанс бази даних.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param current_user: Поточний авторизований користувач.</span>
+<span class="sd">    :type current_user: User</span>
+<span class="sd">    :return: Видалений контакт.</span>
+<span class="sd">    :rtype: Contact</span>
+<span class="sd">    :raises HTTPException: Якщо контакт не знайдено.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">contacts</span><span class="o">.</span><span class="n">delete_contact</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">current_user</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">db_contact</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">404</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Contact not found&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">routes.contacts</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Maks.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

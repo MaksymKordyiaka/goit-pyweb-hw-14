@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>repository.contacts &#8212; rest app  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">repository.contacts</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for repository.contacts</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">extract</span><span class="p">,</span> <span class="n">cast</span><span class="p">,</span> <span class="n">Date</span><span class="p">,</span> <span class="n">and_</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">db.models</span> <span class="kn">import</span> <span class="n">Contact</span><span class="p">,</span> <span class="n">User</span>
+<span class="kn">from</span> <span class="nn">schemas</span> <span class="kn">import</span> <span class="n">ContactCreate</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">date</span><span class="p">,</span> <span class="n">timedelta</span>
+
+
+<div class="viewcode-block" id="get_contacts">
+<a class="viewcode-back" href="../../index.html#repository.contacts.get_contacts">[docs]</a>
+<span class="k">def</span> <span class="nf">get_contacts</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">skip</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves a list of contacts for a specific user with pagination options.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param user: The user whose contacts are being retrieved.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :param skip: The number of contacts to skip. Default is 0.</span>
+<span class="sd">    :type skip: int</span>
+<span class="sd">    :param limit: The maximum number of contacts to return. Default is 100.</span>
+<span class="sd">    :type limit: int</span>
+<span class="sd">    :return: A list of contacts for the user.</span>
+<span class="sd">    :rtype: List[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">offset</span><span class="p">(</span><span class="n">skip</span><span class="p">)</span><span class="o">.</span><span class="n">limit</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_contact">
+<a class="viewcode-back" href="../../index.html#repository.contacts.get_contact">[docs]</a>
+<span class="k">def</span> <span class="nf">get_contact</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves a specific contact by ID for a user.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param contact_id: The ID of the contact to retrieve.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :param user: The user who owns the contact.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :return: The contact if found, or None.</span>
+<span class="sd">    :rtype: Optional[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">contact_id</span><span class="p">,</span> <span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="create_contact">
+<a class="viewcode-back" href="../../index.html#repository.contacts.create_contact">[docs]</a>
+<span class="k">def</span> <span class="nf">create_contact</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">contact</span><span class="p">:</span> <span class="n">ContactCreate</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Contact</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a new contact for a user.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param contact: The data for the new contact.</span>
+<span class="sd">    :type contact: ContactCreate</span>
+<span class="sd">    :param user: The user to whom the contact belongs.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :return: The created contact.</span>
+<span class="sd">    :rtype: Contact</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">Contact</span><span class="p">(</span><span class="o">**</span><span class="n">contact</span><span class="o">.</span><span class="n">dict</span><span class="p">(),</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">db_contact</span><span class="p">)</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">db_contact</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+
+
+<div class="viewcode-block" id="upgrade_contact">
+<a class="viewcode-back" href="../../index.html#repository.contacts.upgrade_contact">[docs]</a>
+<span class="k">def</span> <span class="nf">upgrade_contact</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">contact</span><span class="p">:</span> <span class="n">ContactCreate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Updates an existing contact for a user.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param user: The user who owns the contact.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :param contact_id: The ID of the contact to update.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :param contact: The updated data for the contact.</span>
+<span class="sd">    :type contact: ContactCreate</span>
+<span class="sd">    :return: The updated contact, or None if not found.</span>
+<span class="sd">    :rtype: Optional[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">contact_id</span><span class="p">,</span> <span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">db_contact</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">contact</span><span class="o">.</span><span class="n">dict</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">db_contact</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">refresh</span><span class="p">(</span><span class="n">db_contact</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">db_contact</span></div>
+
+
+
+<div class="viewcode-block" id="delete_contact">
+<a class="viewcode-back" href="../../index.html#repository.contacts.delete_contact">[docs]</a>
+<span class="k">def</span> <span class="nf">delete_contact</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">contact_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deletes a contact for a specific user.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param user: The user who owns the contact.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :param contact_id: The ID of the contact to delete.</span>
+<span class="sd">    :type contact_id: int</span>
+<span class="sd">    :return: The deleted contact, or None if not found.</span>
+<span class="sd">    :rtype: Optional[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">db_contact</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">and_</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">contact_id</span><span class="p">,</span> <span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">db_contact</span><span class="p">:</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">db_contact</span><span class="p">)</span>
+        <span class="n">db</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">db_contact</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="search_contacts">
+<a class="viewcode-back" href="../../index.html#repository.contacts.search_contacts">[docs]</a>
+<span class="k">def</span> <span class="nf">search_contacts</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">first_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">second_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Searches for contacts based on first name, last name, or email.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param user: The user whose contacts are being searched.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :param first_name: The first name to search for. Default is None.</span>
+<span class="sd">    :type first_name: Optional[str]</span>
+<span class="sd">    :param second_name: The last name to search for. Default is None.</span>
+<span class="sd">    :type second_name: Optional[str]</span>
+<span class="sd">    :param email: The email to search for. Default is None.</span>
+<span class="sd">    :type email: Optional[str]</span>
+<span class="sd">    :return: A list of contacts matching the search criteria.</span>
+<span class="sd">    :rtype: List[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">first_name</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">first_name</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">first_name</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">second_name</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">second_name</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">second_name</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">email</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">email</span><span class="o">.</span><span class="n">ilike</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">email</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="n">all</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_upcoming_birthdays">
+<a class="viewcode-back" href="../../index.html#repository.contacts.get_upcoming_birthdays">[docs]</a>
+<span class="k">def</span> <span class="nf">get_upcoming_birthdays</span><span class="p">(</span><span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Contact</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Retrieves contacts with upcoming birthdays within the next 7 days.</span>
+
+<span class="sd">    :param db: The database session.</span>
+<span class="sd">    :type db: Session</span>
+<span class="sd">    :param user: The user whose contacts are being checked.</span>
+<span class="sd">    :type user: User</span>
+<span class="sd">    :return: A list of contacts with upcoming birthdays.</span>
+<span class="sd">    :rtype: List[Contact]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">today</span> <span class="o">=</span> <span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span>
+    <span class="n">seven_days_later</span> <span class="o">=</span> <span class="n">today</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+    <span class="n">contacts_with_upcoming_birthdays</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+        <span class="n">Contact</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">extract</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">birthdate</span><span class="p">,</span> <span class="n">Date</span><span class="p">))</span> <span class="o">==</span> <span class="n">today</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+        <span class="n">extract</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">birthdate</span><span class="p">,</span> <span class="n">Date</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="n">today</span><span class="o">.</span><span class="n">day</span><span class="p">,</span>
+        <span class="n">extract</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">birthdate</span><span class="p">,</span> <span class="n">Date</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">seven_days_later</span><span class="o">.</span><span class="n">day</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">today</span><span class="o">.</span><span class="n">month</span> <span class="o">!=</span> <span class="n">seven_days_later</span><span class="o">.</span><span class="n">month</span><span class="p">:</span>
+        <span class="n">contacts_with_upcoming_birthdays</span> <span class="o">+=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">Contact</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">extract</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">birthdate</span><span class="p">,</span> <span class="n">Date</span><span class="p">))</span> <span class="o">==</span> <span class="n">seven_days_later</span><span class="o">.</span><span class="n">month</span><span class="p">,</span>
+            <span class="n">extract</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="n">cast</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">birthdate</span><span class="p">,</span> <span class="n">Date</span><span class="p">))</span> <span class="o">&lt;=</span> <span class="n">seven_days_later</span><span class="o">.</span><span class="n">day</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">contacts_with_upcoming_birthdays</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">repository.contacts</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Maks.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>

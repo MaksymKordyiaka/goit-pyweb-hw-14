@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>services.email &#8212; rest app  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/nature.css?v=0f882399" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">services.email</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for services.email</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">from</span> <span class="nn">fastapi_mail</span> <span class="kn">import</span> <span class="n">FastMail</span><span class="p">,</span> <span class="n">MessageSchema</span><span class="p">,</span> <span class="n">ConnectionConfig</span><span class="p">,</span> <span class="n">MessageType</span>
+<span class="kn">from</span> <span class="nn">fastapi_mail.errors</span> <span class="kn">import</span> <span class="n">ConnectionErrors</span>
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">EmailStr</span>
+<span class="kn">from</span> <span class="nn">services.auth</span> <span class="kn">import</span> <span class="n">auth_services</span>
+
+<span class="c1"># Завантаження змінних середовища з файлу .env</span>
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="c1"># Конфігурація для підключення до сервера електронної пошти</span>
+<span class="n">conf</span> <span class="o">=</span> <span class="n">ConnectionConfig</span><span class="p">(</span>
+    <span class="n">MAIL_USERNAME</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MAIL_USERNAME&quot;</span><span class="p">),</span>  <span class="c1"># Ім&#39;я користувача для автентифікації на сервері електронної пошти</span>
+    <span class="n">MAIL_PASSWORD</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MAIL_PASSWORD&quot;</span><span class="p">),</span>  <span class="c1"># Пароль для автентифікації на сервері електронної пошти</span>
+    <span class="n">MAIL_FROM</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MAIL_FROM&quot;</span><span class="p">),</span>  <span class="c1"># Електронна пошта відправника</span>
+    <span class="n">MAIL_PORT</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MAIL_PORT&quot;</span><span class="p">),</span>  <span class="c1"># Порт сервера електронної пошти</span>
+    <span class="n">MAIL_SERVER</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MAIL_SERVER&quot;</span><span class="p">),</span>  <span class="c1"># Адреса сервера електронної пошти</span>
+    <span class="n">MAIL_FROM_NAME</span><span class="o">=</span><span class="s2">&quot;Maks&quot;</span><span class="p">,</span>  <span class="c1"># Ім&#39;я відправника, яке буде відображатися в листах</span>
+    <span class="n">MAIL_STARTTLS</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Використовувати TLS для захищеного з&#39;єднання</span>
+    <span class="n">MAIL_SSL_TLS</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Використовувати SSL/TLS для захищеного з&#39;єднання</span>
+    <span class="n">USE_CREDENTIALS</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Використовувати автентифікацію для підключення</span>
+    <span class="n">VALIDATE_CERTS</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Перевіряти сертифікати сервера</span>
+    <span class="n">TEMPLATE_FOLDER</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;templates&#39;</span><span class="p">,</span>  <span class="c1"># Шлях до папки з шаблонами електронних листів</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="send_email">
+<a class="viewcode-back" href="../../index.html#services.email.send_email">[docs]</a>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">send_email</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="n">EmailStr</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Відправляє електронний лист для підтвердження електронної пошти.</span>
+
+<span class="sd">    :param email: Електронна адреса отримувача.</span>
+<span class="sd">    :type email: EmailStr</span>
+<span class="sd">    :param username: Ім&#39;я користувача для відображення в листі.</span>
+<span class="sd">    :type username: str</span>
+<span class="sd">    :param host: Базова URL адреса для підтвердження електронної пошти.</span>
+<span class="sd">    :type host: str</span>
+<span class="sd">    :raises ConnectionErrors: Якщо сталася помилка при з&#39;єднанні з сервером електронної пошти.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Створює токен для підтвердження електронної пошти</span>
+        <span class="n">token_verification</span> <span class="o">=</span> <span class="n">auth_services</span><span class="o">.</span><span class="n">create_email_token</span><span class="p">({</span><span class="s2">&quot;sub&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+
+        <span class="c1"># Створює повідомлення електронної пошти</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">MessageSchema</span><span class="p">(</span>
+            <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Confirm your email&quot;</span><span class="p">,</span>  <span class="c1"># Тема електронного листа</span>
+            <span class="n">recipients</span><span class="o">=</span><span class="p">[</span><span class="n">email</span><span class="p">],</span>  <span class="c1"># Отримувачі електронного листа</span>
+            <span class="n">template_body</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span> <span class="s2">&quot;token&quot;</span><span class="p">:</span> <span class="n">token_verification</span><span class="p">},</span>
+            <span class="c1"># Тіло шаблону електронного листа</span>
+            <span class="n">subtype</span><span class="o">=</span><span class="n">MessageType</span><span class="o">.</span><span class="n">html</span>  <span class="c1"># Тип повідомлення (HTML)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Ініціалізує FastMail з конфігурацією</span>
+        <span class="n">fm</span> <span class="o">=</span> <span class="n">FastMail</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+
+        <span class="c1"># Відправляє електронний лист за допомогою шаблону</span>
+        <span class="k">await</span> <span class="n">fm</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">template_name</span><span class="o">=</span><span class="s2">&quot;email.html&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ConnectionErrors</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="c1"># Виводить помилку у випадку проблем з підключенням</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span></div>
+
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">rest app  documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">services.email</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2024, Maks.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    </div>
+  </body>
+</html>
